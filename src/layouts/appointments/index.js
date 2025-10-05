@@ -4,7 +4,10 @@
 =========================================================
 */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// API Service
+import { turnosAPI, profesionalesAPI } from "services/api";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
@@ -40,6 +43,25 @@ function Appointments() {
     numeroAfiliado: "",
   });
 
+  const [profesionales, setProfesionales] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  // Cargar profesionales
+  useEffect(() => {
+    const loadProfesionales = async () => {
+      try {
+        const data = await profesionalesAPI.getAll();
+        setProfesionales(data);
+      } catch (err) {
+        console.error("Error al cargar profesionales:", err);
+      }
+    };
+
+    loadProfesionales();
+  }, []);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -47,11 +69,34 @@ function Appointments() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Datos del turno:", formData);
-    // Aquí irá la lógica para enviar los datos al backend
-    alert("Turno registrado exitosamente");
+    setLoading(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      const response = await turnosAPI.create({
+        fecha: formData.fecha,
+        hora: formData.hora,
+        tipo: "regular", // o formData.especialidad
+        profesional: formData.profesional,
+        motivo: formData.motivoConsulta,
+      });
+
+      console.log("Turno registrado:", response);
+      setSuccess(true);
+
+      // Limpiar formulario después de 2 segundos y redirigir
+      setTimeout(() => {
+        window.location.href = "/turnos";
+      }, 2000);
+    } catch (err) {
+      setError(err.error?.message || "Error al registrar el turno");
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,6 +122,24 @@ function Appointments() {
               </MDBox>
               <MDBox pt={4} pb={3} px={3}>
                 <MDBox component="form" role="form" onSubmit={handleSubmit}>
+                  {/* Mensaje de error */}
+                  {error && (
+                    <MDBox mb={2}>
+                      <MDTypography variant="caption" color="error" fontWeight="medium">
+                        ✕ {error}
+                      </MDTypography>
+                    </MDBox>
+                  )}
+
+                  {/* Mensaje de éxito */}
+                  {success && (
+                    <MDBox mb={2}>
+                      <MDTypography variant="caption" color="success" fontWeight="regular">
+                        ✓ ¡Turno registrado exitosamente! Redirigiendo...
+                      </MDTypography>
+                    </MDBox>
+                  )}
+
                   {/* Sección: Datos del Paciente */}
                   <MDTypography variant="h6" fontWeight="medium" mb={2}>
                     Datos del Paciente
@@ -274,11 +337,11 @@ function Appointments() {
 
                   {/* Botones de acción */}
                   <MDBox mt={4} mb={1} display="flex" justifyContent="space-between">
-                    <MDButton variant="outlined" color="secondary">
+                    <MDButton variant="outlined" color="secondary" href="/turnos">
                       Cancelar
                     </MDButton>
-                    <MDButton type="submit" variant="gradient" color="success">
-                      Registrar Turno
+                    <MDButton type="submit" variant="gradient" color="success" disabled={loading}>
+                      {loading ? "Registrando..." : "Registrar Turno"}
                     </MDButton>
                   </MDBox>
                 </MDBox>

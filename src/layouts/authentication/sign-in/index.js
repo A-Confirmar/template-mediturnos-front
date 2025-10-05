@@ -18,6 +18,9 @@ import { useState } from "react";
 // react-router-dom components
 import { Link } from "react-router-dom";
 
+// API Service
+import { authAPI } from "services/api";
+
 // @mui material components
 import Card from "@mui/material/Card";
 import Switch from "@mui/material/Switch";
@@ -42,9 +45,31 @@ import BasicLayout from "layouts/authentication/components/BasicLayout";
 import bgImage from "assets/images/bg-sign-in-basic.jpeg";
 
 function Basic() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await authAPI.login(email, password);
+      console.log("Login exitoso:", response);
+
+      // Redirigir al dashboard
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setError(err.error?.message || "Error al iniciar sesión");
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <BasicLayout image={bgImage}>
@@ -83,11 +108,32 @@ function Basic() {
         </MDBox>
         <MDBox pt={4} pb={3} px={3}>
           <MDBox component="form" role="form">
+            {error && (
+              <MDBox mb={2}>
+                <MDTypography variant="caption" color="error" fontWeight="medium">
+                  {error}
+                </MDTypography>
+              </MDBox>
+            )}
             <MDBox mb={2}>
-              <MDInput type="email" label="Email" fullWidth />
+              <MDInput
+                type="email"
+                label="Email"
+                fullWidth
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </MDBox>
             <MDBox mb={2}>
-              <MDInput type="password" label="Password" fullWidth />
+              <MDInput
+                type="password"
+                label="Password"
+                fullWidth
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </MDBox>
             <MDBox display="flex" alignItems="center" ml={-1}>
               <Switch checked={rememberMe} onChange={handleSetRememberMe} />
@@ -102,8 +148,14 @@ function Basic() {
               </MDTypography>
             </MDBox>
             <MDBox mt={4} mb={1}>
-              <MDButton variant="gradient" color="info" fullWidth>
-                sign in
+              <MDButton
+                variant="gradient"
+                color="info"
+                fullWidth
+                onClick={handleLogin}
+                disabled={loading}
+              >
+                {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </MDButton>
             </MDBox>
             <MDBox mt={3} mb={1} textAlign="center">
